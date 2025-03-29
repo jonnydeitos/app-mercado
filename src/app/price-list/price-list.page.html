@@ -1,0 +1,31 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Lista de Preços</ion-title>
+  </ion-toolbar>
+</ion-header>
+<ion-content class="ion-padding">
+  <ion-searchbar
+    [(ngModel)]="searchTerm"
+    (ionInput)="filterByEmpresa()"
+    placeholder="Buscar por empresa"
+  ></ion-searchbar>
+  <ion-list>
+    <div *ngFor="let group of groupByMonth()">
+      <ion-item-group>
+        <ion-item-divider>{{ group.month }}</ion-item-divider>
+        <ion-item *ngFor="let nota of group.notas">
+          <ion-label>
+            <h2>{{ nota.empresa }}</h2>
+            <p>Data: {{ nota.data }}</p>
+            <p *ngFor="let item of nota.itens">
+              {{ item.nome }} - R$ {{ item.valorUnitario | number:'1.2-2' }}
+            </p>
+          </ion-label>
+        </ion-item>
+      </ion-item-group>
+    </div>
+    <ion-item *ngIf="!filteredNotas.length">
+      <ion-label>Nenhuma nota encontrada</ion-label>
+    </ion-item>
+  </ion-list>
+</ion-content>
