@@ -3,10 +3,10 @@ import {
   BarcodeScanner,
   BarcodeFormat,
 } from '@capacitor-mlkit/barcode-scanning';
-import { Preferences } from '@capacitor/preferences'; // Substitui Storage por Preferences
+import { Preferences } from '@capacitor/preferences';
 import { NotaFiscalService } from '../services/nota-fiscal.service';
 import { Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
+import { AlertController, LoadingController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
@@ -22,20 +22,23 @@ export class ScanPage {
   constructor(
     private notaFiscalService: NotaFiscalService,
     private router: Router,
-    private alertController: AlertController
+    private alertController: AlertController,
+    private loadingController: LoadingController
   ) {}
 
   async scanQRCode() {
     try {
       const { supported } = await BarcodeScanner.isSupported();
       if (!supported) {
-        this.showAlert('Erro', 'Escaneamento não suportado neste dispositivo.');
+        console.log('Escaneamento não suportado');
+        await this.showAlert('Erro', 'Escaneamento não suportado neste dispositivo.');
         return;
       }
 
       const { camera } = await BarcodeScanner.requestPermissions();
       if (camera !== 'granted') {
-        this.showAlert(
+        console.log('Permissão de câmera negada');
+        await this.showAlert(
           'Permissão Negada',
           'É necessário permitir o uso da câmera.'
         );
@@ -53,45 +56,106 @@ export class ScanPage {
           'dfe-portal.svrs.rs.gov.br/Dfe/QrCodeNFce'
         );
         console.log('URL ajustada:', adjustedUrl);
+
+        const loading = await this.loadingController.create({
+          message: 'Processando nota fiscal...',
+          spinner: 'crescent',
+        });
+        await loading.present();
+
         this.notaFiscalService.fetchNotaFiscalData(adjustedUrl).subscribe({
           next: async (data) => {
-            console.log('Dados salvos:', data);
+            const numeroNFe = data.numeroNFe || this.extractNumeroNFe(adjustedUrl);
+            if (!numeroNFe) {
+              await loading.dismiss();
+              console.log('Número da NFe não identificado');
+              await this.showAlert('Erro', 'Não foi possível identificar o número da NFe.');
+              return;
+            }
+
             const existingNotas = await this.getNotas();
+            const notaExists = existingNotas.find(
+              (nota) => nota.numeroNFe === numeroNFe
+            );
+
+            if (notaExists) {
+              await loading.dismiss();
+              console.log('Nota duplicada detectada:', numeroNFe);
+              await this.showAlert(
+                'Aviso',
+                'Essa nota fiscal já foi lida e já consta no cadastro no aplicativo.'
+              );
+              const empresa = this.simplifyEmpresaName(notaExists.empresa);
+              const notasDaEmpresa = existingNotas.filter(
+                (nota) => this.simplifyEmpresaName(nota.empresa) === empresa
+              );
+              this.router.navigate(['/empresa-details'], {
+                state: { empresa, notas: notasDaEmpresa },
+              });
+              return;
+            }
+
+            data.numeroNFe = numeroNFe;
             existingNotas.push(data);
             await Preferences.set({
               key: 'notas',
               value: JSON.stringify(existingNotas),
             });
+
+            await loading.dismiss();
             this.router.navigate(['/price-list']);
           },
-          error: (err) => {
+          error: async (err) => {
+            await loading.dismiss();
             console.error('Erro ao buscar dados:', err);
-            this.showAlert(
+            await this.showAlert(
               'Erro',
               'Não foi possível carregar os dados da nota.'
             );
           },
         });
       } else {
-        this.showAlert('Erro', 'Nenhum QR code encontrado.');
+        console.log('Nenhum QR code encontrado');
+        await this.showAlert('Erro', 'Nenhum QR code encontrado.');
       }
     } catch (error) {
-      this.showAlert('Erro', 'Falha ao escanear o QR code.');
-      console.error(error);
+      console.error('Erro ao escanear:', error);
+      await this.showAlert('Erro', 'Falha ao escanear o QR code.');
     }
   }
 
+  // Método para exibir o alerta
+  async showAlert(header: string, message: string) {
+    try {
+      console.log('Exibindo alerta:', { header, message });
+      const alert = await this.alertController.create({
+        header,
+        message,
+        buttons: ['OK'],
+      });
+      await alert.present();
+      console.log('Alerta exibido com sucesso');
+    } catch (error) {
+      console.error('Erro ao exibir o alerta:', error);
+    }
+  }
+
+  extractNumeroNFe(url: string): string {
+    const match = url.match(/p=([0-9]+)/);
+    return match ? match[1] : url;
+  }
+
+  simplifyEmpresaName(empresa: string): string {
+    const parts = empresa.split(/CNPJ|,\s*/);
+    return parts[0].trim();
+  }
+
   async getNotas(): Promise<any[]> {
-    const { value } = await Preferences.get({ key: 'notas' }); // Ajustado para Preferences
+    const { value } = await Preferences.get({ key: 'notas' });
     return value ? JSON.parse(value) : [];
   }
 
-  async showAlert(header: string, message: string) {
-    const alert = await this.alertController.create({
-      header,
-      message,
-      buttons: ['OK'],
-    });
-    await alert.present();
+  goToPriceList() {
+    this.router.navigate(['/price-list']);
   }
 }

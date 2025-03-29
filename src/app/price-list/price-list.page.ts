@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Preferences } from '@capacitor/preferences'; // Substitui Storage por Preferences
+import { Preferences } from '@capacitor/preferences';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
@@ -27,27 +27,38 @@ export class PriceListPage implements OnInit {
   }
 
   async getNotas(): Promise<NotaFiscal[]> {
-    const { value } = await Preferences.get({ key: 'notas' }); // Ajustado para Preferences
+    const { value } = await Preferences.get({ key: 'notas' });
     return value ? JSON.parse(value) : [];
   }
 
   filterByEmpresa() {
     this.filteredNotas = this.notas.filter((nota) =>
-      nota.empresa.toLowerCase().includes(this.searchTerm.toLowerCase())
+      this.simplifyEmpresaName(nota.empresa).toLowerCase().includes(this.searchTerm.toLowerCase())
     );
   }
 
-  groupByMonth(): { month: string; notas: NotaFiscal[] }[] {
+  simplifyEmpresaName(empresa: string): string {
+    const parts = empresa.split(/CNPJ|,\s*/);
+    return parts[0].trim();
+  }
+
+  groupByEmpresa(): { empresa: string; notas: NotaFiscal[] }[] {
     const grouped = new Map<string, NotaFiscal[]>();
-    this.notas.forEach((nota) => {
-      const [day, month, year] = nota.data.split('/');
-      const monthYear = new Date(+year, +month - 1).toLocaleString('default', {
-        month: 'long',
-        year: 'numeric',
-      });
-      if (!grouped.has(monthYear)) grouped.set(monthYear, []);
-      grouped.get(monthYear)?.push(nota);
+    this.filteredNotas.forEach((nota) => {
+      const empresa = this.simplifyEmpresaName(nota.empresa);
+      if (!grouped.has(empresa)) grouped.set(empresa, []);
+      grouped.get(empresa)?.push(nota);
     });
-    return Array.from(grouped, ([month, notas]) => ({ month, notas }));
+    return Array.from(grouped, ([empresa, notas]) => ({ empresa, notas }));
+  }
+
+  goToEmpresaDetails(empresa: string, notas: NotaFiscal[]) {
+    this.router.navigate(['/empresa-details'], {
+      state: { empresa, notas },
+    });
+  }
+
+  goToHistoricoProdutos() {
+    this.router.navigate(['/historico-produtos']);
   }
 }

@@ -1,0 +1,34 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/price-list"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ empresa }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div *ngFor="let item of itensComparativos">
+    <h3 class="item-title">{{ item.nome }}</h3>
+    <div class="cards-container">
+      <ion-card *ngFor="let lancamento of item.lancamentos" class="nota-card">
+        <ion-card-content>
+          <h4>Data: {{ lancamento.data }}</h4>
+          <p>Preço: R$ {{ lancamento.valorUnitario | number:'1.2-2' }}</p>
+          <p *ngIf="lancamento.diferenca" [ngClass]="{
+            'price-increase': lancamento.diferenca.valor > 0,
+            'price-decrease': lancamento.diferenca.valor < 0
+          }">
+            Diferença: {{ lancamento.diferenca.valor > 0 ? '+' : '' }}{{ lancamento.diferenca.valor | number:'1.2-2' }} ({{ lancamento.diferenca.percentual | number:'1.2-2' }}%)
+          </p>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+
+  <ion-card *ngIf="!itensComparativos.length">
+    <ion-card-content>
+      Nenhuma nota encontrada
+    </ion-card-content>
+  </ion-card>
+</ion-content>

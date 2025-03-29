@@ -15,6 +15,14 @@ const routes: Routes = [
         (m) => m.PriceListPageModule
       ),
   },
+  {
+    path: 'empresa-details',
+    loadChildren: () => import('./empresa-details/empresa-details.module').then( m => m.EmpresaDetailsPageModule)
+  },
+  {
+    path: 'historico-produtos',
+    loadChildren: () => import('./historico-produtos/historico-produtos.module').then( m => m.HistoricoProdutosPageModule)
+  },
 ];
 
 @NgModule({

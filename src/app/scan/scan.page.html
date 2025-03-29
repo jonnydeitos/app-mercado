@@ -1,10 +1,18 @@
 <ion-header>
-  <ion-toolbar color="primary">
-    <ion-title>Escanear Nota Fiscal</ion-title>
+  <ion-toolbar>
+    <ion-title>Scanear Notas</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="goToPriceList()">
+        <ion-icon name="list-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
-<ion-content class="ion-padding">
-  <ion-button expand="block" (click)="scanQRCode()"
-    >Escanear QR Code</ion-button
-  >
+
+<ion-content class="scan-content">
+  <div class="button-container">
+    <button class="modern-button" (click)="scanQRCode()">
+      <ion-icon name="scan-outline"></ion-icon>
+    </button>
+  </div>
 </ion-content>

@@ -8,6 +8,12 @@ export interface NotaFiscal {
   empresa: string;
   data: string;
   itens: { nome: string; valorUnitario: number }[];
+  numeroNFe?: string; // Adicione este campo
+}
+export interface NotaFiscal {
+  empresa: string;
+  data: string;
+  itens: { nome: string; valorUnitario: number }[];
 }
 
 @Injectable({

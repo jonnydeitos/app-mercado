@@ -1,0 +1,35 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/price-list"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Histórico de Produtos</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div *ngFor="let produto of produtosHistorico">
+    <h3 class="produto-title">{{ produto.nome }}</h3>
+    <div class="cards-container">
+      <ion-card *ngFor="let lancamento of produto.lancamentos" class="produto-card">
+        <ion-card-content>
+          <h4>Empresa: {{ lancamento.empresa }}</h4>
+          <p>Data: {{ lancamento.data }}</p>
+          <p>Preço: R$ {{ lancamento.valorUnitario | number:'1.2-2' }}</p>
+          <p *ngIf="lancamento.diferenca" [ngClass]="{
+            'price-increase': lancamento.diferenca.valor > 0,
+            'price-decrease': lancamento.diferenca.valor < 0
+          }">
+            Diferença: {{ lancamento.diferenca.valor > 0 ? '+' : '' }}{{ lancamento.diferenca.valor | number:'1.2-2' }} ({{ lancamento.diferenca.percentual | number:'1.2-2' }}%)
+          </p>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+
+  <ion-card *ngIf="!produtosHistorico.length">
+    <ion-card-content>
+      Nenhum produto encontrado
+    </ion-card-content>
+  </ion-card>
+</ion-content>

@@ -1,3 +1,44 @@
-.scanner-active {
-  background: transparent !important;
+.scan-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modern-button {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%; // Torna o botão redondo
+  background: linear-gradient(135deg, #6e8efb, #a777e3); // Gradiente moderno
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); // Sombra suave para profundidade
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  ion-icon {
+    font-size: 36px;
+    color: white;
+  }
+
+  &:hover {
+    transform: scale(1.1); // Efeito de zoom ao passar o mouse (se for web)
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  &:active {
+    transform: scale(0.95); // Efeito de clique
+  }
+}
+ion-loading.custom-loader {
+  --background: rgba(0, 0, 0, 0.8);
+  --spinner-color: #6e8efb; // Cor do spinner combinando com o botão
+  color: white;
 }
