@@ -3,17 +3,8 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../services/api.service';
 import { HttpClientModule } from '@angular/common/http';
-
-interface ProdutoHistorico {
-  id: string;
-  nome: string;
-  categoria: string;
-  empresa: string;
-  data: string;
-  valor_unitario: number;
-}
+import { ApiService, ProdutoHistorico } from '../services/api.service';
 
 @Component({
   selector: 'app-historico-produtos',
@@ -43,8 +34,8 @@ export class HistoricoProdutosPage implements OnInit {
 
   async loadProducts() {
     this.apiService.getProdutos().subscribe({
-      next: (rows) => {
-        this.produtosHistorico = rows.map((item: any) => ({
+      next: (rows: ProdutoHistorico[]) => {
+        this.produtosHistorico = rows.map((item) => ({
           id: item.id,
           nome: item.nome,
           categoria: this.determineCategory(item.nome),
@@ -56,7 +47,7 @@ export class HistoricoProdutosPage implements OnInit {
         this.produtosHistorico.sort((a, b) => a.nome.localeCompare(b.nome));
         this.filterByCategory();
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Erro ao carregar produtos:', err);
       },
     });

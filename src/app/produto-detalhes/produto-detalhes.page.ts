@@ -3,19 +3,10 @@ import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Chart, registerables } from 'chart.js';
-import { ApiService } from '../services/api.service';
 import { HttpClientModule } from '@angular/common/http';
+import { ApiService, ProdutoHistorico } from '../services/api.service';
 
 Chart.register(...registerables);
-
-interface ProdutoHistorico {
-  id: string;
-  nome: string;
-  categoria: string;
-  empresa: string;
-  data: string;
-  valor_unitario: number;
-}
 
 @Component({
   selector: 'app-produto-detalhes',
@@ -46,10 +37,10 @@ export class ProdutoDetalhesPage implements OnInit {
     this.apiService
       .getLancamentos(this.produto!.nome, this.currentYear)
       .subscribe({
-        next: (rows) => {
+        next: (rows: ProdutoHistorico[]) => {
           this.lancamentosFiltrados = rows;
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('Erro ao carregar lançamentos:', err);
         },
       });
