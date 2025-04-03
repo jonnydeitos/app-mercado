@@ -44,6 +44,25 @@ app.get('/produtos/:nome/lancamentos', async (req, res) => {
   }
 });
 
+app.post('/produtos', async (req, res) => {
+  const { nome, categoria, empresa, data, valor_unitario } = req.body;
+  console.log('Dados recebidos:', req.body);
+  if (!nome || !categoria || !empresa || !data || !valor_unitario) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
+  try {
+    const result = await pool.query(
+      'INSERT INTO produtos_historico (nome, categoria, empresa, data, valor_unitario) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [nome, categoria, empresa, data, valor_unitario]
+    );
+    console.log('Produto inserido:', result.rows[0]);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao adicionar produto:', err);
+    res.status(500).json({ error: 'Erro ao adicionar produto', details: err.message });
+  }
+});
+
 // Iniciar o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
