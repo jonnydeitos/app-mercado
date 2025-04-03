@@ -24,6 +24,10 @@
     ],
     "useDefineForClassFields": false
   },
+  "types": [
+    "node",
+    "pg"
+  ],
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,

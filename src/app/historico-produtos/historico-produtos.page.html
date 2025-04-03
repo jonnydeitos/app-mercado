@@ -8,28 +8,41 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-  <div *ngFor="let produto of produtosHistorico">
-    <h3 class="produto-title">{{ produto.nome }}</h3>
-    <div class="cards-container">
-      <ion-card *ngFor="let lancamento of produto.lancamentos" class="produto-card">
-        <ion-card-content>
-          <h4>Empresa: {{ lancamento.empresa }}</h4>
-          <p>Data: {{ lancamento.data }}</p>
-          <p>Preço: R$ {{ lancamento.valorUnitario | number:'1.2-2' }}</p>
-          <p *ngIf="lancamento.diferenca" [ngClass]="{
-            'price-increase': lancamento.diferenca.valor > 0,
-            'price-decrease': lancamento.diferenca.valor < 0
-          }">
-            Diferença: {{ lancamento.diferenca.valor > 0 ? '+' : '' }}{{ lancamento.diferenca.valor | number:'1.2-2' }} ({{ lancamento.diferenca.percentual | number:'1.2-2' }}%)
-          </p>
-        </ion-card-content>
-      </ion-card>
-    </div>
+  <!-- Filtro por categoria com ion-select -->
+  <ion-item>
+    <ion-label>Categoria</ion-label>
+    <ion-select
+      [(ngModel)]="selectedCategory"
+      (ionChange)="filterByCategory()"
+      placeholder="Selecione uma categoria"
+    >
+      <ion-select-option value="todos">Todos</ion-select-option>
+      <ion-select-option value="limpeza">Limpeza</ion-select-option>
+      <ion-select-option value="eletronicos">Eletrônicos</ion-select-option>
+      <ion-select-option value="carnes">Carnes</ion-select-option>
+      <ion-select-option value="outros">Outros</ion-select-option>
+    </ion-select>
+  </ion-item>
+
+  <!-- Lista de produtos filtrados -->
+  <div class="cards-container">
+    <ion-card
+      *ngFor="let produto of produtosFiltrados"
+      (click)="showProductDetails(produto)"
+    >
+      <ion-card-header>
+        <ion-card-title>{{ produto.nome }}</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p>Último preço: R$ {{ getLastPrice(produto) | number:'1.2-2' }}</p>
+        <!-- Removido: <p>Registros: {{ produto.lancamentos.length }}</p> -->
+      </ion-card-content>
+    </ion-card>
   </div>
 
-  <ion-card *ngIf="!produtosHistorico.length">
+  <ion-card *ngIf="!produtosFiltrados.length">
     <ion-card-content>
-      Nenhum produto encontrado
+      Nenhum produto encontrado para esta categoria
     </ion-card-content>
   </ion-card>
 </ion-content>

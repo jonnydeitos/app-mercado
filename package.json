@@ -31,9 +31,12 @@
     "@capacitor/preferences": "^7.0.0",
     "@capacitor/status-bar": "^7.0.0",
     "@ionic/angular": "^8.0.0",
+    "@types/pg": "^8.11.11",
+    "chart.js": "^4.4.8",
     "cheerio": "^1.0.0",
     "ionicons": "^7.0.0",
     "jsqr": "^1.4.0",
+    "pg": "^8.14.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

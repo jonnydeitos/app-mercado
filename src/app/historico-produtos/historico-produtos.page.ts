@@ -1,12 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { Preferences } from '@capacitor/preferences';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { NotaFiscal } from '../services/nota-fiscal.service';
+import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ApiService } from '../services/api.service';
+import { HttpClientModule } from '@angular/common/http';
 
 interface ProdutoHistorico {
+  id: string;
   nome: string;
-  lancamentos: { empresa: string; data: string; valorUnitario: number; diferenca?: { valor: number; percentual: number } }[];
+  categoria: string;
+  empresa: string;
+  data: string;
+  valor_unitario: number;
 }
 
 @Component({
@@ -14,77 +20,75 @@ interface ProdutoHistorico {
   templateUrl: './historico-produtos.page.html',
   styleUrls: ['./historico-produtos.page.scss'],
   standalone: true,
-  imports: [CommonModule, IonicModule],
+  imports: [CommonModule, IonicModule, FormsModule, HttpClientModule],
 })
 export class HistoricoProdutosPage implements OnInit {
   produtosHistorico: ProdutoHistorico[] = [];
+  produtosFiltrados: ProdutoHistorico[] = [];
+  selectedCategory: string = 'todos';
 
-  constructor() {}
+  private categorias: { [key: string]: string[] } = {
+    limpeza: ['detergente', 'sabão', 'esponja', 'desinfetante'],
+    eletronicos: ['celular', 'carregador', 'fones', 'bateria'],
+    carnes: ['frango', 'carne', 'linguiça', 'peixe'],
+    outros: [],
+  };
+
+  constructor(private router: Router, private apiService: ApiService) {}
 
   async ngOnInit() {
-    const notas = await this.getNotas();
-    this.prepareHistorico(notas);
+    await this.loadProducts();
+    this.filterByCategory();
   }
 
-  async getNotas(): Promise<NotaFiscal[]> {
-    const { value } = await Preferences.get({ key: 'notas' });
-    return value ? JSON.parse(value) : [];
-  }
+  async loadProducts() {
+    this.apiService.getProdutos().subscribe({
+      next: (rows) => {
+        this.produtosHistorico = rows.map((item: any) => ({
+          id: item.id,
+          nome: item.nome,
+          categoria: this.determineCategory(item.nome),
+          empresa: item.empresa,
+          data: item.data,
+          valor_unitario: item.valor_unitario,
+        }));
 
-  prepareHistorico(notas: NotaFiscal[]) {
-    // Agrupar todos os itens por nome
-    const produtosMap = new Map<string, { empresa: string; data: string; valorUnitario: number }[]>();
-    notas.forEach((nota) => {
-      const empresa = this.simplifyEmpresaName(nota.empresa);
-      nota.itens.forEach((item) => {
-        if (!produtosMap.has(item.nome)) {
-          produtosMap.set(item.nome, []);
-        }
-        produtosMap.get(item.nome)?.push({
-          empresa,
-          data: nota.data,
-          valorUnitario: item.valorUnitario,
-        });
-      });
+        this.produtosHistorico.sort((a, b) => a.nome.localeCompare(b.nome));
+        this.filterByCategory();
+      },
+      error: (err) => {
+        console.error('Erro ao carregar produtos:', err);
+      },
     });
-
-    // Converter o mapa em uma lista de produtos históricos
-    this.produtosHistorico = Array.from(produtosMap, ([nome, lancamentos]) => {
-      // Ordenar os lançamentos por data (do mais antigo ao mais recente)
-      lancamentos.sort((a, b) => {
-        const [dayA, monthA, yearA] = a.data.split('/').map(Number);
-        const [dayB, monthB, yearB] = b.data.split('/').map(Number);
-        return new Date(yearA, monthA - 1, dayA).getTime() - new Date(yearB, monthB - 1, dayB).getTime();
-      });
-
-      // Calcular as diferenças
-      const lancamentosComDiferenca = lancamentos.map((lancamento, index) => {
-        if (index === 0) {
-          return { ...lancamento, diferenca: undefined };
-        }
-
-        const anterior = lancamentos[index - 1];
-        const valorDiferenca = lancamento.valorUnitario - anterior.valorUnitario;
-        const percentualDiferenca = (valorDiferenca / anterior.valorUnitario) * 100;
-
-        return {
-          ...lancamento,
-          diferenca: {
-            valor: valorDiferenca,
-            percentual: percentualDiferenca,
-          },
-        };
-      });
-
-      return { nome, lancamentos: lancamentosComDiferenca };
-    });
-
-    // Ordenar os produtos por nome
-    this.produtosHistorico.sort((a, b) => a.nome.localeCompare(b.nome));
   }
 
-  simplifyEmpresaName(empresa: string): string {
-    const parts = empresa.split(/CNPJ|,\s*/);
-    return parts[0].trim();
+  determineCategory(nome: string): string {
+    const nomeLower = nome.toLowerCase();
+    for (const [categoria, palavras] of Object.entries(this.categorias)) {
+      if (palavras.some((palavra) => nomeLower.includes(palavra))) {
+        return categoria;
+      }
+    }
+    return 'outros';
+  }
+
+  filterByCategory() {
+    if (this.selectedCategory === 'todos') {
+      this.produtosFiltrados = [...this.produtosHistorico];
+    } else {
+      this.produtosFiltrados = this.produtosHistorico.filter(
+        (produto) => produto.categoria === this.selectedCategory
+      );
+    }
+  }
+
+  getLastPrice(produto: ProdutoHistorico): number {
+    return produto.valor_unitario;
+  }
+
+  showProductDetails(produto: ProdutoHistorico) {
+    this.router.navigate(['/produto-detalhes'], {
+      state: { produto },
+    });
   }
 }

@@ -1,0 +1,31 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/historico-produtos"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ produto?.nome }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <!-- Gráfico de preços -->
+  <canvas id="priceChart" height="200"></canvas>
+
+  <!-- Detalhes em lista -->
+  <ion-list>
+    <ion-item *ngFor="let lancamento of lancamentosFiltrados">
+      <ion-label>
+        <h3>{{ lancamento.data }}</h3>
+        <p>Empresa: {{ lancamento.empresa }}</p>
+        <p>Preço: R$ {{ lancamento.valor_unitario | number:'1.2-2' }}</p>
+        <!-- Ajustado -->
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <ion-card *ngIf="!lancamentosFiltrados.length">
+    <ion-card-content>
+      Nenhum registro encontrado para este ano
+    </ion-card-content>
+  </ion-card>
+</ion-content>
