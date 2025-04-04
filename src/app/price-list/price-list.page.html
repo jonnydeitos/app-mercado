@@ -14,9 +14,10 @@
     [(ngModel)]="searchTerm"
     (ionInput)="filterByEmpresa()"
     placeholder="Buscar por empresa"
+    [disabled]="isLoading"
   ></ion-searchbar>
 
-  <div class="cards-container">
+  <div class="cards-container" *ngIf="!isLoading">
     <ion-card
       *ngFor="let group of groupByEmpresa()"
       (click)="goToEmpresaDetails(group.empresa, group.produtos)"
@@ -29,7 +30,7 @@
     </ion-card>
   </div>
 
-  <ion-card *ngIf="!filteredProdutos.length">
+  <ion-card *ngIf="!isLoading && !filteredProdutos.length">
     <ion-card-content> Nenhuma empresa encontrada </ion-card-content>
   </ion-card>
 </ion-content>

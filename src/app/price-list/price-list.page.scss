@@ -54,3 +54,8 @@ ion-buttons[slot="end"] {
     }
   }
 }
+ion-loading.custom-loader {
+  --background: rgba(0, 0, 0, 0.8);
+  --spinner-color: #6e8efb;
+  color: white;
+}

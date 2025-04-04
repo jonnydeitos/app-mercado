@@ -9,8 +9,8 @@ const port = 3000;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: true
-  }
+    rejectUnauthorized: true,
+  },
 });
 
 // Middleware
@@ -20,7 +20,9 @@ app.use(express.json());
 // Rota para buscar todos os produtos
 app.get('/produtos', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM produtos_historico ORDER BY data ASC');
+    const result = await pool.query(
+      'SELECT * FROM produtos_historico ORDER BY data ASC'
+    );
     res.json(result.rows);
   } catch (err) {
     console.error('Erro ao buscar produtos:', err);
@@ -44,6 +46,7 @@ app.get('/produtos/:nome/lancamentos', async (req, res) => {
   }
 });
 
+// Rota para adicionar um produto
 app.post('/produtos', async (req, res) => {
   const { nome, categoria, empresa, data, valor_unitario } = req.body;
   console.log('Dados recebidos:', req.body);
@@ -60,6 +63,25 @@ app.post('/produtos', async (req, res) => {
   } catch (err) {
     console.error('Erro ao adicionar produto:', err);
     res.status(500).json({ error: 'Erro ao adicionar produto', details: err.message });
+  }
+});
+
+// Rota para deletar produtos de uma nota fiscal
+app.delete('/produtos', async (req, res) => {
+  const { empresa, data } = req.query;
+  if (!empresa || !data) {
+    return res.status(400).json({ error: 'Empresa e data são obrigatórios' });
+  }
+  try {
+    const result = await pool.query(
+      'DELETE FROM produtos_historico WHERE empresa = $1 AND data = $2 RETURNING *',
+      [empresa, data]
+    );
+    console.log('Produtos deletados:', result.rows);
+    res.json({ message: 'Produtos deletados com sucesso', deleted: result.rows });
+  } catch (err) {
+    console.error('Erro ao deletar produtos:', err);
+    res.status(500).json({ error: 'Erro ao deletar produtos', details: err.message });
   }
 });
 
