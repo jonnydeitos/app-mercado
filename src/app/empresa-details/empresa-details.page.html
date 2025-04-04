@@ -11,15 +11,24 @@
   <div *ngFor="let item of itensComparativos">
     <h3 class="item-title">{{ item.nome }}</h3>
     <div class="cards-container">
-      <ion-card *ngFor="let lancamento of item.lancamentos" class="nota-card">
+      <ion-card
+        *ngFor="let lancamento of item.lancamentos"
+        class="nota-card"
+        (click)="goToProdutoDetalhes({ nome: item.nome, data: lancamento.data, valor_unitario: lancamento.valorUnitario, empresa: empresa, categoria: 'outros', id: '' })"
+      >
         <ion-card-content>
           <h4>Data: {{ lancamento.data }}</h4>
           <p>Preço: R$ {{ lancamento.valorUnitario | number:'1.2-2' }}</p>
-          <p *ngIf="lancamento.diferenca" [ngClass]="{
-            'price-increase': lancamento.diferenca.valor > 0,
-            'price-decrease': lancamento.diferenca.valor < 0
-          }">
-            Diferença: {{ lancamento.diferenca.valor > 0 ? '+' : '' }}{{ lancamento.diferenca.valor | number:'1.2-2' }} ({{ lancamento.diferenca.percentual | number:'1.2-2' }}%)
+          <p
+            *ngIf="lancamento.diferenca"
+            [ngClass]="{
+              'price-increase': lancamento.diferenca.valor > 0,
+              'price-decrease': lancamento.diferenca.valor < 0
+            }"
+          >
+            Diferença: {{ lancamento.diferenca.valor > 0 ? '+' : '' }}{{
+            lancamento.diferenca.valor | number:'1.2-2' }} ({{
+            lancamento.diferenca.percentual | number:'1.2-2' }}%)
           </p>
         </ion-card-content>
       </ion-card>
@@ -27,8 +36,6 @@
   </div>
 
   <ion-card *ngIf="!itensComparativos.length">
-    <ion-card-content>
-      Nenhuma nota encontrada
-    </ion-card-content>
+    <ion-card-content> Nenhuma nota encontrada </ion-card-content>
   </ion-card>
 </ion-content>

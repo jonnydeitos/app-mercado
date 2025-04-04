@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { Preferences } from '@capacitor/preferences';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
-import { NotaFiscal } from '../services/nota-fiscal.service';
+import { ApiService, ProdutoHistorico } from '../services/api.service';
 
 @Component({
   selector: 'app-price-list',
@@ -14,47 +13,47 @@ import { NotaFiscal } from '../services/nota-fiscal.service';
   imports: [CommonModule, FormsModule, IonicModule],
 })
 export class PriceListPage implements OnInit {
-  notas: NotaFiscal[] = [];
+  produtos: ProdutoHistorico[] = [];
   searchTerm: string = '';
-  filteredNotas: NotaFiscal[] = [];
+  filteredProdutos: ProdutoHistorico[] = [];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private apiService: ApiService) {}
 
   async ngOnInit() {
-    this.notas = await this.getNotas();
-    this.filteredNotas = [...this.notas];
-    console.log('Notas carregadas:', this.notas);
-  }
-
-  async getNotas(): Promise<NotaFiscal[]> {
-    const { value } = await Preferences.get({ key: 'notas' });
-    return value ? JSON.parse(value) : [];
+    this.apiService.getProdutos().subscribe({
+      next: (produtos) => {
+        this.produtos = produtos;
+        this.filteredProdutos = [...this.produtos];
+        console.log('Produtos carregados:', this.produtos);
+      },
+      error: (err) => {
+        console.error('Erro ao carregar produtos:', err);
+      },
+    });
   }
 
   filterByEmpresa() {
-    this.filteredNotas = this.notas.filter((nota) =>
-      this.simplifyEmpresaName(nota.empresa).toLowerCase().includes(this.searchTerm.toLowerCase())
+    this.filteredProdutos = this.produtos.filter((produto) =>
+      produto.empresa.toLowerCase().includes(this.searchTerm.toLowerCase())
     );
   }
 
-  simplifyEmpresaName(empresa: string): string {
-    const parts = empresa.split(/CNPJ|,\s*/);
-    return parts[0].trim();
-  }
-
-  groupByEmpresa(): { empresa: string; notas: NotaFiscal[] }[] {
-    const grouped = new Map<string, NotaFiscal[]>();
-    this.filteredNotas.forEach((nota) => {
-      const empresa = this.simplifyEmpresaName(nota.empresa);
+  groupByEmpresa(): { empresa: string; produtos: ProdutoHistorico[] }[] {
+    const grouped = new Map<string, ProdutoHistorico[]>();
+    this.filteredProdutos.forEach((produto) => {
+      const empresa = produto.empresa;
       if (!grouped.has(empresa)) grouped.set(empresa, []);
-      grouped.get(empresa)?.push(nota);
+      grouped.get(empresa)?.push(produto);
     });
-    return Array.from(grouped, ([empresa, notas]) => ({ empresa, notas }));
+    return Array.from(grouped, ([empresa, produtos]) => ({
+      empresa,
+      produtos,
+    }));
   }
 
-  goToEmpresaDetails(empresa: string, notas: NotaFiscal[]) {
+  goToEmpresaDetails(empresa: string, produtos: ProdutoHistorico[]) {
     this.router.navigate(['/empresa-details'], {
-      state: { empresa, notas },
+      state: { empresa, produtos },
     });
   }
 

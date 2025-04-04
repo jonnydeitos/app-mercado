@@ -2,11 +2,15 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { NotaFiscal } from '../services/nota-fiscal.service';
+import { ProdutoHistorico } from '../services/api.service';
 
 interface ItemComparativo {
   nome: string;
-  lancamentos: { data: string; valorUnitario: number; diferenca?: { valor: number; percentual: number } }[];
+  lancamentos: {
+    data: string;
+    valorUnitario: number;
+    diferenca?: { valor: number; percentual: number };
+  }[];
 }
 
 @Component({
@@ -18,7 +22,7 @@ interface ItemComparativo {
 })
 export class EmpresaDetailsPage implements OnInit {
   empresa: string = '';
-  notas: NotaFiscal[] = [];
+  produtos: ProdutoHistorico[] = [];
   itensComparativos: ItemComparativo[] = [];
 
   constructor(private router: Router) {}
@@ -27,75 +31,56 @@ export class EmpresaDetailsPage implements OnInit {
     const navigation = this.router.getCurrentNavigation();
     if (navigation?.extras.state) {
       this.empresa = navigation.extras.state['empresa'];
-      this.notas = navigation.extras.state['notas'];
-      this.notas = this.removeDuplicates(this.notas);
-      this.prepareComparativo();
+      this.produtos = navigation.extras.state['produtos'];
+      this.prepareItensComparativos();
     }
   }
 
-  removeDuplicates(notas: NotaFiscal[]): NotaFiscal[] {
-    const seen = new Set<string>();
-    return notas.filter((nota) => {
-      if (!nota.numeroNFe) return true;
-      if (seen.has(nota.numeroNFe)) return false;
-      seen.add(nota.numeroNFe);
-      return true;
-    });
-  }
-
-  simplifyEmpresaName(empresa: string): string {
-    const parts = empresa.split(/CNPJ|,\s*/);
-    return parts[0].trim();
-  }
-
-  prepareComparativo() {
-    // Agrupar todos os itens por nome
-    const itensMap = new Map<string, { data: string; valorUnitario: number }[]>();
-    this.notas.forEach((nota) => {
-      nota.itens.forEach((item) => {
-        if (!itensMap.has(item.nome)) {
-          itensMap.set(item.nome, []);
-        }
-        itensMap.get(item.nome)?.push({
-          data: nota.data,
-          valorUnitario: item.valorUnitario,
-        });
-      });
+  prepareItensComparativos() {
+    // Agrupar produtos por nome
+    const groupedByNome = new Map<string, ProdutoHistorico[]>();
+    this.produtos.forEach((produto) => {
+      if (!groupedByNome.has(produto.nome)) groupedByNome.set(produto.nome, []);
+      groupedByNome.get(produto.nome)?.push(produto);
     });
 
-    // Converter o mapa em uma lista de itens comparativos
-    this.itensComparativos = Array.from(itensMap, ([nome, lancamentos]) => {
-      // Ordenar os lançamentos por data (do mais antigo ao mais recente)
-      lancamentos.sort((a, b) => {
-        const [dayA, monthA, yearA] = a.data.split('/').map(Number);
-        const [dayB, monthB, yearB] = b.data.split('/').map(Number);
-        return new Date(yearA, monthA - 1, dayA).getTime() - new Date(yearB, monthB - 1, dayB).getTime();
-      });
+    // Calcular diferenças de preço
+    this.itensComparativos = Array.from(groupedByNome, ([nome, produtos]) => {
+      // Ordenar por data (mais recente primeiro)
+      produtos.sort(
+        (a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()
+      );
 
-      // Calcular as diferenças
-      const lancamentosComDiferenca = lancamentos.map((lancamento, index) => {
-        if (index === 0) {
-          // Primeiro lançamento, sem comparação
-          return { ...lancamento, diferenca: undefined };
-        }
-
-        const anterior = lancamentos[index - 1];
-        const valorDiferenca = lancamento.valorUnitario - anterior.valorUnitario;
-        const percentualDiferenca = (valorDiferenca / anterior.valorUnitario) * 100;
-
-        return {
-          ...lancamento,
-          diferenca: {
-            valor: valorDiferenca,
-            percentual: percentualDiferenca,
-          },
+      const lancamentos = produtos.map((produto, index) => {
+        const lancamento = {
+          data: produto.data,
+          valorUnitario: produto.valor_unitario,
         };
+
+        // Calcular diferença em relação ao lançamento anterior (se existir)
+        if (index < produtos.length - 1) {
+          const anterior = produtos[index + 1].valor_unitario;
+          const diferencaValor = produto.valor_unitario - anterior;
+          const diferencaPercentual =
+            anterior !== 0 ? (diferencaValor / anterior) * 100 : 0;
+          return {
+            ...lancamento,
+            diferenca: {
+              valor: diferencaValor,
+              percentual: diferencaPercentual,
+            },
+          };
+        }
+        return lancamento;
       });
 
-      return { nome, lancamentos: lancamentosComDiferenca };
+      return { nome, lancamentos };
     });
+  }
 
-    // Ordenar os itens por nome
-    this.itensComparativos.sort((a, b) => a.nome.localeCompare(b.nome));
+  goToProdutoDetalhes(produto: ProdutoHistorico) {
+    this.router.navigate(['/produto-detalhes'], {
+      state: { produto },
+    });
   }
 }

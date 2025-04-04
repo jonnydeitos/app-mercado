@@ -28,4 +28,8 @@ export class ApiService {
       `${this.apiUrl}/produtos/${nome}/lancamentos?ano=${ano}`
     );
   }
+
+  adicionarProduto(produto: ProdutoHistorico): Observable<ProdutoHistorico> {
+    return this.http.post<ProdutoHistorico>(`${this.apiUrl}/produtos`, produto);
+  }
 }

@@ -17,16 +17,19 @@
   ></ion-searchbar>
 
   <div class="cards-container">
-    <ion-card *ngFor="let group of groupByEmpresa()" (click)="goToEmpresaDetails(group.empresa, group.notas)">
+    <ion-card
+      *ngFor="let group of groupByEmpresa()"
+      (click)="goToEmpresaDetails(group.empresa, group.produtos)"
+    >
       <ion-card-header>
-        <ion-card-title class="empresa-name">{{ group.empresa }}</ion-card-title>
+        <ion-card-title class="empresa-name"
+          >{{ group.empresa }}</ion-card-title
+        >
       </ion-card-header>
     </ion-card>
   </div>
 
-  <ion-card *ngIf="!filteredNotas.length">
-    <ion-card-content>
-      Nenhuma nota encontrada
-    </ion-card-content>
+  <ion-card *ngIf="!filteredProdutos.length">
+    <ion-card-content> Nenhuma empresa encontrada </ion-card-content>
   </ion-card>
 </ion-content>

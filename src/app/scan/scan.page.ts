@@ -4,7 +4,8 @@ import {
   BarcodeFormat,
 } from '@capacitor-mlkit/barcode-scanning';
 import { Preferences } from '@capacitor/preferences';
-import { NotaFiscalService } from '../services/nota-fiscal.service';
+import { NotaFiscalService, NotaFiscal } from '../services/nota-fiscal.service';
+import { ApiService, ProdutoHistorico } from '../services/api.service';
 import { Router } from '@angular/router';
 import { AlertController, LoadingController } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
@@ -21,6 +22,7 @@ import { IonicModule } from '@ionic/angular';
 export class ScanPage {
   constructor(
     private notaFiscalService: NotaFiscalService,
+    private apiService: ApiService,
     private router: Router,
     private alertController: AlertController,
     private loadingController: LoadingController
@@ -31,7 +33,10 @@ export class ScanPage {
       const { supported } = await BarcodeScanner.isSupported();
       if (!supported) {
         console.log('Escaneamento não suportado');
-        await this.showAlert('Erro', 'Escaneamento não suportado neste dispositivo.');
+        await this.showAlert(
+          'Erro',
+          'Escaneamento não suportado neste dispositivo.'
+        );
         return;
       }
 
@@ -65,14 +70,19 @@ export class ScanPage {
 
         this.notaFiscalService.fetchNotaFiscalData(adjustedUrl).subscribe({
           next: async (data) => {
-            const numeroNFe = data.numeroNFe || this.extractNumeroNFe(adjustedUrl);
+            const numeroNFe =
+              data.numeroNFe || this.extractNumeroNFe(adjustedUrl);
             if (!numeroNFe) {
               await loading.dismiss();
               console.log('Número da NFe não identificado');
-              await this.showAlert('Erro', 'Não foi possível identificar o número da NFe.');
+              await this.showAlert(
+                'Erro',
+                'Não foi possível identificar o número da NFe.'
+              );
               return;
             }
 
+            // Verificar se a nota já foi processada (usando o backend, se necessário)
             const existingNotas = await this.getNotas();
             const notaExists = existingNotas.find(
               (nota) => nota.numeroNFe === numeroNFe
@@ -95,6 +105,33 @@ export class ScanPage {
               return;
             }
 
+            // Converter os itens da nota fiscal para o formato ProdutoHistorico e enviar para o backend
+            const produtos: ProdutoHistorico[] = data.itens.map((item) => ({
+              id: '',
+              nome: item.nome,
+              categoria: 'outros', // Você pode implementar uma lógica para determinar a categoria
+              empresa: data.empresa,
+              data: this.formatarData(data.data), // Formata a data para YYYY-MM-DD
+              valor_unitario: item.valorUnitario,
+            }));
+
+            // Enviar cada produto para o backend
+            for (const produto of produtos) {
+              try {
+                await this.apiService.adicionarProduto(produto).toPromise();
+                console.log('Produto adicionado:', produto);
+              } catch (err) {
+                console.error('Erro ao adicionar produto:', err);
+                await loading.dismiss();
+                await this.showAlert(
+                  'Erro',
+                  'Falha ao salvar o produto no banco de dados.'
+                );
+                return;
+              }
+            }
+
+            // Salvar a nota fiscal localmente para referência futura
             data.numeroNFe = numeroNFe;
             existingNotas.push(data);
             await Preferences.set({
@@ -122,6 +159,12 @@ export class ScanPage {
       console.error('Erro ao escanear:', error);
       await this.showAlert('Erro', 'Falha ao escanear o QR code.');
     }
+  }
+
+  // Função para formatar a data de DD/MM/YYYY para YYYY-MM-DD
+  private formatarData(data: string): string {
+    const [dia, mes, ano] = data.split('/');
+    return `${ano}-${mes}-${dia}`;
   }
 
   // Método para exibir o alerta
