@@ -30,7 +30,9 @@ export class ScanPage {
 
   async scanQRCode() {
     try {
+      console.log('Iniciando verificação de suporte ao escaneamento...');
       const { supported } = await BarcodeScanner.isSupported();
+      console.log('Escaneamento suportado:', supported);
       if (!supported) {
         console.log('Escaneamento não suportado');
         await this.showAlert(
@@ -40,7 +42,9 @@ export class ScanPage {
         return;
       }
 
+      console.log('Solicitando permissões de câmera...');
       const { camera } = await BarcodeScanner.requestPermissions();
+      console.log('Permissões de câmera:', camera);
       if (camera !== 'granted') {
         console.log('Permissão de câmera negada');
         await this.showAlert(
@@ -50,9 +54,11 @@ export class ScanPage {
         return;
       }
 
+      console.log('Iniciando escaneamento...');
       const { barcodes } = await BarcodeScanner.scan({
         formats: [BarcodeFormat.QrCode],
       });
+      console.log('Barcodes encontrados:', barcodes);
 
       if (barcodes.length > 0) {
         const rawUrl = barcodes[0].rawValue;
@@ -70,6 +76,7 @@ export class ScanPage {
 
         this.notaFiscalService.fetchNotaFiscalData(adjustedUrl).subscribe({
           next: async (data) => {
+            console.log('Dados da nota fiscal:', data);
             const numeroNFe =
               data.numeroNFe || this.extractNumeroNFe(adjustedUrl);
             if (!numeroNFe) {
@@ -82,7 +89,6 @@ export class ScanPage {
               return;
             }
 
-            // Verificar se a nota já foi processada (usando o backend, se necessário)
             const existingNotas = await this.getNotas();
             const notaExists = existingNotas.find(
               (nota) => nota.numeroNFe === numeroNFe
@@ -105,21 +111,21 @@ export class ScanPage {
               return;
             }
 
-            // Converter os itens da nota fiscal para o formato ProdutoHistorico e enviar para o backend
             const produtos: ProdutoHistorico[] = data.itens.map((item) => ({
               id: '',
               nome: item.nome,
-              categoria: 'outros', // Você pode implementar uma lógica para determinar a categoria
+              categoria: 'outros',
               empresa: data.empresa,
-              data: this.formatarData(data.data), // Formata a data para YYYY-MM-DD
+              data: this.formatarData(data.data),
               valor_unitario: item.valorUnitario,
             }));
 
-            // Enviar cada produto para o backend
             for (const produto of produtos) {
               try {
-                await this.apiService.adicionarProduto(produto).toPromise();
-                console.log('Produto adicionado:', produto);
+                const result = await this.apiService
+                  .adicionarProduto(produto)
+                  .toPromise();
+                console.log('Produto adicionado:', result);
               } catch (err) {
                 console.error('Erro ao adicionar produto:', err);
                 await loading.dismiss();
@@ -131,7 +137,6 @@ export class ScanPage {
               }
             }
 
-            // Salvar a nota fiscal localmente para referência futura
             data.numeroNFe = numeroNFe;
             existingNotas.push(data);
             await Preferences.set({
@@ -161,13 +166,11 @@ export class ScanPage {
     }
   }
 
-  // Função para formatar a data de DD/MM/YYYY para YYYY-MM-DD
   private formatarData(data: string): string {
     const [dia, mes, ano] = data.split('/');
     return `${ano}-${mes}-${dia}`;
   }
 
-  // Método para exibir o alerta
   async showAlert(header: string, message: string) {
     try {
       console.log('Exibindo alerta:', { header, message });

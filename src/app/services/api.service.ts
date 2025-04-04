@@ -32,4 +32,10 @@ export class ApiService {
   adicionarProduto(produto: ProdutoHistorico): Observable<ProdutoHistorico> {
     return this.http.post<ProdutoHistorico>(`${this.apiUrl}/produtos`, produto);
   }
+
+  deletarProdutos(empresa: string, data: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/produtos`, {
+      params: { empresa, data },
+    });
+  }
 }

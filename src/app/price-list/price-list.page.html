@@ -15,22 +15,38 @@
     (ionInput)="filterByEmpresa()"
     placeholder="Buscar por empresa"
     [disabled]="isLoading"
+    class="modern-searchbar"
   ></ion-searchbar>
 
   <div class="cards-container" *ngIf="!isLoading">
     <ion-card
       *ngFor="let group of groupByEmpresa()"
+      class="modern-card"
       (click)="goToEmpresaDetails(group.empresa, group.produtos)"
     >
-      <ion-card-header>
+      <ion-card-header class="card-header">
         <ion-card-title class="empresa-name"
           >{{ group.empresa }}</ion-card-title
         >
+        <ion-button
+          fill="clear"
+          color="danger"
+          class="delete-button"
+          (click)="excluirNota(group.empresa, group.produtos); $event.stopPropagation()"
+        >
+          <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
+        </ion-button>
       </ion-card-header>
+      <ion-card-content class="card-content">
+        <p>{{ group.produtos.length }} produtos registrados</p>
+      </ion-card-content>
     </ion-card>
   </div>
 
-  <ion-card *ngIf="!isLoading && !filteredProdutos.length">
+  <ion-card
+    *ngIf="!isLoading && !filteredProdutos.length"
+    class="modern-card no-data-card"
+  >
     <ion-card-content> Nenhuma empresa encontrada </ion-card-content>
   </ion-card>
 </ion-content>

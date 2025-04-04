@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonicModule } from '@ionic/angular';
+import { IonicModule, LoadingController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
@@ -17,6 +17,7 @@ export class HistoricoProdutosPage implements OnInit {
   produtosHistorico: ProdutoHistorico[] = [];
   produtosFiltrados: ProdutoHistorico[] = [];
   selectedCategory: string = 'todos';
+  isLoading: boolean = false;
 
   private categorias: { [key: string]: string[] } = {
     limpeza: ['detergente', 'sabão', 'esponja', 'desinfetante'],
@@ -25,7 +26,11 @@ export class HistoricoProdutosPage implements OnInit {
     outros: [],
   };
 
-  constructor(private router: Router, private apiService: ApiService) {}
+  constructor(
+    private router: Router,
+    private apiService: ApiService,
+    private loadingController: LoadingController
+  ) {}
 
   async ngOnInit() {
     await this.loadProducts();
@@ -33,6 +38,12 @@ export class HistoricoProdutosPage implements OnInit {
   }
 
   async loadProducts() {
+    this.isLoading = true;
+    const loading = await this.loadingController.create({
+      message: 'Carregando produtos...',
+      spinner: 'crescent',
+    });
+    await loading.present();
     this.apiService.getProdutos().subscribe({
       next: (rows: ProdutoHistorico[]) => {
         this.produtosHistorico = rows.map((item) => ({
@@ -46,9 +57,13 @@ export class HistoricoProdutosPage implements OnInit {
 
         this.produtosHistorico.sort((a, b) => a.nome.localeCompare(b.nome));
         this.filterByCategory();
+        this.isLoading = false;
+        loading.dismiss();
       },
       error: (err: any) => {
         console.error('Erro ao carregar produtos:', err);
+        this.isLoading = false;
+        loading.dismiss();
       },
     });
   }
