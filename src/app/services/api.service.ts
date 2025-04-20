@@ -34,8 +34,16 @@ export class ApiService {
   }
 
   deletarProdutos(empresa: string, data: string): Observable<any> {
+    console.log(`Data recebida para formatação: ${data}`);
+    const formattedData = this.formatarData(data);
+    console.log(`Enviando DELETE para empresa=${empresa} e data=${formattedData}`);
     return this.http.delete(`${this.apiUrl}/produtos`, {
-      params: { empresa, data },
+      params: { empresa, data: formattedData },
     });
+  }
+
+  private formatarData(data: string): string {
+    const [dia, mes, ano] = data.split('/');
+    return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
   }
 }
